@@ -6,31 +6,32 @@ from GeoData.manager import Manager
 
 manager = Manager()
 
-adcode_history = [(100000, '全国')]
-
 
 def main():
+    adcode_history = [(100000, '全国')]
     adcode = 100000
     while True:
-        frame = manager.fetch(adcode=adcode)
-        if frame is None:
+        geojson, geodf = manager.fetch(adcode=adcode)
+        if geojson is None:
             print('???? Can not fetch data, restoring latest success')
             adcode_history.pop()
             adcode = adcode_history[-1][0]
             continue
 
-        table = manager.get_children(frame)
-
         print('-----------------------------------------------')
         # List candidates
-        lst = [name for name in table]
-        for j, name in enumerate(lst):
-            print(j, name)
+        print(geodf[['adcode', 'level', 'parent', 'center', 'childrenNum']])
         inp = input(f'{adcode_history} >> ')
 
         # Show frame
         if inp == 'f':
-            print(frame)
+            print(geodf[['adcode', 'level', 'parent', 'center', 'childrenNum']])
+            continue
+
+        # Draw map
+        if inp == 'd':
+            fig = manager.draw_latest()
+            fig.show()
             continue
 
         # Quit
@@ -52,17 +53,17 @@ def main():
         except ValueError:
             print(f'!!!! ValueError occurred, continuing')
             continue
-        # Try to get [adcode]
-        try:
-            name = lst[idx]
-            adcode = int(table[name][0])
-            adcode_history.append((adcode, name))
-            print('Selecting {}'.format(name))
-        except IndexError:
+
+        # Try to get [adcode],
+        # check and select idx
+        if idx not in range(0, len(geodf)):
             print(f'!!!! IndexError occurred, continuing')
             continue
 
-    pass
+        name = geodf.index[idx]
+        adcode = int(geodf.loc[name]['adcode'])
+        adcode_history.append((adcode, name))
+        print('Selecting {}'.format((adcode, name)))
 
 
 if __name__ == '__main__':
