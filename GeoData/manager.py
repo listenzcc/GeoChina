@@ -30,6 +30,16 @@ def parse_geojson(geojson, idx='name'):
     return geodf
 
 
+def get_options(geodf):
+    options = []
+    for j in range(len(geodf)):
+        _name = geodf.index[j]
+        _adcode = geodf.adcode[_name]
+        options.append(dict(label=_name,
+                            value=_adcode))
+    return options
+
+
 """
 At zoom level	You can see
 0	The Earth
@@ -46,16 +56,19 @@ zoom_table = dict(
     city=8,
     district=10,
 )
+default_zoom = 3
 
 
 class Manager(object):
     def __init__(self, adcode=100000):
-        self.level_table = dict()
-        self.level_table[adcode] = 'country'
+        adcode = '100000'
+        self.level_table = {adcode: 'country'}
+        self.name_table = {adcode: '中国'}
         logger.info('Manager initialized')
 
     def fetch(self, adcode):
         # Fetch geojson of [adcode]
+        adcode = str(adcode)
         # Start timing
         t = time.time()
 
@@ -70,9 +83,10 @@ class Manager(object):
 
         # Parse geojson into geodf
         geodf = parse_geojson(geojson)
-        for j in range(len(geodf)):
-            se = geodf.iloc[j]
-            self.level_table[int(se['adcode'])] = se['level']
+        for name in geodf.index:
+            _adcode = str(geodf.adcode[name])
+            self.level_table[_adcode] = geodf.level[name]
+            self.name_table[_adcode] = name
         cnt = len(geodf)
 
         # Report and return
@@ -82,6 +96,7 @@ class Manager(object):
         self.adcode = adcode
         self.geojson = geojson
         self.geodf = geodf
+        self.options = get_options(geodf)
         return geojson, geodf
 
     def draw_latest(self):
@@ -95,7 +110,9 @@ class Manager(object):
             lon=mean[0],
         )
         style = 'light'
-        zoom = zoom_table.get(self.level_table[self.adcode], 3)
+        zoom = zoom_table.get(self.level_table[self.adcode], default_zoom)
+        name = self.name_table[self.adcode]
+        title = f'Choropleth Mapbox of "{name}"'
         logger.debug(f'Using zoom of: "{zoom}"')
 
         data = go.Choroplethmapbox(
@@ -107,7 +124,6 @@ class Manager(object):
             marker=dict(opacity=opacity,),
             marker_line_width=0,
         )
-        print(data)
         fig = go.Figure(data)
 
         fig.update_layout(
@@ -115,15 +131,17 @@ class Manager(object):
             mapbox_center=center,
             mapbox_style=style,
             mapbox_zoom=zoom,
+            title=title,
+            # showlegend=True,
         )
 
-        fig.update_layout(
-            margin=dict(
-                r=0,
-                t=0,
-                l=0,
-                b=0,
-            )
-        )
+        # fig.update_layout(
+        #     margin=dict(
+        #         r=0,
+        #         t=0,
+        #         l=0,
+        #         b=0,
+        #     )
+        # )
 
         return fig
