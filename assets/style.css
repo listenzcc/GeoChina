@@ -1,0 +1,25 @@
+div#main-area {
+    display: flex;
+    border: 1px solid cyan;
+}
+
+div#left-panel {
+    width: 200px;
+    height: 800px;
+    padding: 5px;
+}
+
+div#middle-panel {
+    width: 800px;
+    height: 800px;
+}
+
+div#graph1 {
+    width: 100%;
+    height: 100%;
+}
+
+button#button1 {
+    width: 100%;
+    height: 40px;
+}

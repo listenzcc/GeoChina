@@ -40,14 +40,26 @@ def get_options(geodf):
     return options
 
 
+def fig_factory(fig):
+    fig.update_layout(
+        margin=dict(
+            # r=0,
+            # t=0,
+            # l=0,
+            # b=0,
+        )
+    )
+    return fig
+
+
 """
-At zoom level	You can see
-0	The Earth
-3	A continent
-4	Large islands
-6	Large rivers
-10	Large roads
-15	Buildings
+At zoom level, You can see
+0, The Earth
+3, A continent
+4, Large islands
+6, Large rivers
+10, Large roads
+15, Buildings
 """
 
 zoom_table = dict(
@@ -60,15 +72,23 @@ default_zoom = 3
 
 
 class Manager(object):
-    def __init__(self, adcode=100000):
+    def __init__(self, init_fetch=True):
         adcode = '100000'
         self.level_table = {adcode: 'country'}
         self.name_table = {adcode: '中国'}
+        self.childrenNum_table = {adcode: 34.0}
+        self.parent_table = {adcode: adcode}
         logger.info('Manager initialized')
+        if init_fetch:
+            self.fetch(adcode)
 
     def fetch(self, adcode):
         # Fetch geojson of [adcode]
         adcode = str(adcode)
+        if self.childrenNum_table[adcode] == 0:
+            logger.debug(
+                f'Not fetching adcode: "{adcode}" since it has no children')
+            return None, None
         # Start timing
         t = time.time()
 
@@ -85,19 +105,27 @@ class Manager(object):
         geodf = parse_geojson(geojson)
         for name in geodf.index:
             _adcode = str(geodf.adcode[name])
-            self.level_table[_adcode] = geodf.level[name]
             self.name_table[_adcode] = name
+            self.level_table[_adcode] = geodf.level[name]
+            self.childrenNum_table[_adcode] = geodf.childrenNum[name]
+            self.parent_table[_adcode] = str(geodf.parent[name]['adcode'])
         cnt = len(geodf)
 
         # Report and return
         t = time.time() - t
         logger.debug(
             f'Fetched geojson of "{adcode}", which has "{cnt}" records, costing "{t}" seconds')
+        print(geodf[['adcode', 'level', 'parent', 'center', 'childrenNum']])
+
         self.adcode = adcode
         self.geojson = geojson
         self.geodf = geodf
         self.options = get_options(geodf)
         return geojson, geodf
+
+    def fetch_parent(self):
+        adcode = self.parent_table[self.adcode]
+        self.fetch(adcode)
 
     def draw_latest(self):
         # Draw map of latest fetch
@@ -135,13 +163,7 @@ class Manager(object):
             # showlegend=True,
         )
 
-        # fig.update_layout(
-        #     margin=dict(
-        #         r=0,
-        #         t=0,
-        #         l=0,
-        #         b=0,
-        #     )
-        # )
+        fig = fig_factory(fig)
+        self.fig = fig
 
         return fig

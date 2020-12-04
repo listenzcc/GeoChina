@@ -11,44 +11,72 @@ from dash.dependencies import Input, Output
 from GeoData.manager import Manager
 
 app = dash.Dash(__name__)
-adcode = 100000
 
 manager = Manager()
-_, geodf = manager.fetch(adcode=adcode)
 fig = manager.draw_latest()
 
-controller = dcc.Dropdown(
-    id='controller',
+selector1 = dcc.Dropdown(
+    id='selector1',
     options=manager.options,
-    value=adcode
+    value=None
 )
 
-graph = dcc.Graph(
+button1 = html.Button(
+    'Up',
+    id='button1',
+    n_clicks=0
+)
+
+graph1 = dcc.Graph(
     figure=fig,
-    id='graph'
+    id='graph1'
 )
 
-app.layout = html.Div([
-    html.Div(
-        [controller],
-        id='control-area'),
-    html.Div(
-        [graph],
-        id='graph-area')
-])
+left_panel = html.Div(
+    [selector1,
+     button1],
+    id='left-panel'
+)
+
+middle_panel = html.Div(
+    [graph1],
+    id='middle-panel'
+)
+
+main_area = html.Div(
+    [left_panel,
+     middle_panel],
+    id='main-area'
+)
+
+app.layout = html.Div(
+    [main_area],
+    id='main-page'
+)
 
 
 @app.callback(
-    Output('graph', 'figure'),
-    Output('controller', 'options'),
-    Input('controller', 'value'),
+    Output('graph1', 'figure'),
+    Output('selector1', 'options'),
+    Input('selector1', 'value'),
+    Input('button1', 'n_clicks')
 )
-def update_output(adcode):
+def update1(adcode, n_clicks):
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    print(changed_id)
+    if 'button1' in changed_id:
+        manager.fetch_parent()
+        fig = manager.draw_latest()
+        return fig, manager.options
+
     print('-----------------------------------')
     print(adcode)
+
+    if adcode is None:
+        return manager.fig, manager.options
+
     manager.fetch(adcode)
     fig = manager.draw_latest()
-
     return fig, manager.options
 
 
