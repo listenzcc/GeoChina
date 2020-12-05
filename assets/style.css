@@ -1,25 +1,34 @@
 div#main-area {
-    display: flex;
-    border: 1px solid cyan;
+  display: flex;
+  border: 1px solid cyan;
+  width: 100%;
 }
 
 div#left-panel {
-    width: 200px;
-    height: 800px;
-    padding: 5px;
+  width: 200px;
+  height: 800px;
+  padding: 5px;
 }
 
 div#middle-panel {
-    width: 800px;
-    height: 800px;
+  flex-grow: 1;
+  /* 800px; */
+  height: 800px;
 }
 
 div#graph1 {
-    width: 100%;
-    height: 100%;
+  width: 100%;
+  height: 100%;
+}
+
+div#slider1 {
+  /* width: 100%; */
+  height: 40px;
+  padding: 10px !important;
+  padding-top: 20px !important;
 }
 
 button#button1 {
-    width: 100%;
-    height: 40px;
+  width: 100%;
+  height: 40px;
 }

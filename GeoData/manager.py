@@ -5,6 +5,7 @@ import geopandas as gpd
 import json
 import numpy as np
 import os
+import pandas as pd
 import plotly.graph_objects as go
 import time
 import urllib
@@ -23,7 +24,7 @@ def full_url(adcode=100000):
 
 
 def parse_geojson(geojson, idx='name'):
-    # Parse the features from the [frame]
+    # Parse the features from the [geojson]
     geodf = gpd.GeoDataFrame.from_features(geojson['features']).set_index(idx)
     if '' in geodf.index:
         geodf = geodf.drop(index='')
@@ -31,6 +32,8 @@ def parse_geojson(geojson, idx='name'):
 
 
 def get_options(geodf):
+    # Get options of the [geodf],
+    # the format is {label: {name}; value: {adcode}}
     options = []
     for j in range(len(geodf)):
         _name = geodf.index[j]
@@ -41,6 +44,8 @@ def get_options(geodf):
 
 
 def fig_factory(fig):
+    # Global figure factory of [fig],
+    # used to set margin, padding, etc...
     fig.update_layout(
         margin=dict(
             # r=0,
@@ -74,18 +79,24 @@ default_zoom = 3
 class Manager(object):
     def __init__(self, init_fetch=True):
         adcode = '100000'
-        self.level_table = {adcode: 'country'}
-        self.name_table = {adcode: '中国'}
-        self.childrenNum_table = {adcode: 34.0}
-        self.parent_table = {adcode: adcode}
+        known_adcode = pd.DataFrame(
+            columns=['level', 'name', 'parent', 'childrenNum'])
+        known_adcode = known_adcode.append(pd.Series(dict(
+            level='country',
+            name='中国',
+            parent=adcode,
+            childrenNum=34,
+        ), name=adcode))
+        self.known_adcode = known_adcode
         logger.info('Manager initialized')
         if init_fetch:
             self.fetch(adcode)
 
     def fetch(self, adcode):
         # Fetch geojson of [adcode]
+        logger.debug(f'Fetching geojson of "{adcode}"')
         adcode = str(adcode)
-        if self.childrenNum_table[adcode] == 0:
+        if self.known_adcode.childrenNum[adcode] == 0:
             logger.debug(
                 f'Not fetching adcode: "{adcode}" since it has no children')
             return None, None
@@ -103,13 +114,17 @@ class Manager(object):
 
         # Parse geojson into geodf
         geodf = parse_geojson(geojson)
+        cnt = len(geodf)
+
+        # Add all records into known_adcode
         for name in geodf.index:
             _adcode = str(geodf.adcode[name])
-            self.name_table[_adcode] = name
-            self.level_table[_adcode] = geodf.level[name]
-            self.childrenNum_table[_adcode] = geodf.childrenNum[name]
-            self.parent_table[_adcode] = str(geodf.parent[name]['adcode'])
-        cnt = len(geodf)
+            self.known_adcode = self.known_adcode.append(pd.Series(dict(
+                level=geodf.level[name],
+                name=name,
+                parent=str(geodf.parent[name]['adcode']),
+                childrenNum=geodf.childrenNum[name],
+            ), name=_adcode))
 
         # Report and return
         t = time.time() - t
@@ -124,25 +139,32 @@ class Manager(object):
         return geojson, geodf
 
     def fetch_parent(self):
-        adcode = self.parent_table[self.adcode]
+        adcode = self.known_adcode.parent[self.adcode]
         self.fetch(adcode)
 
-    def draw_latest(self):
+    def draw_mapbox(self, opacity=0.5):
         # Draw map of latest fetch
+        # Setup parameters
         colorscale = 'Viridis'
-        opacity = 0.5
+        opacity = opacity
+        # centers of the adcode areas,
+        # array of n x 2, n: areas number; 2: [longtitute, latitude]
         centers = np.array(self.geodf.center.to_list())
-        mean = centers.mean(axis=0)
+        # mean = centers.mean(axis=0)
         center = dict(
-            lat=mean[1],
-            lon=mean[0],
+            lon=(max(centers[:, 0]) + min(centers[:, 0]))/2,
+            lat=(max(centers[:, 1]) + min(centers[:, 1]))/2,
+            # lat=mean[1],
+            # lon=mean[0],
         )
         style = 'light'
-        zoom = zoom_table.get(self.level_table[self.adcode], default_zoom)
-        name = self.name_table[self.adcode]
-        title = f'Choropleth Mapbox of "{name}"'
+        level = self.known_adcode.level[self.adcode]
+        zoom = zoom_table.get(level, default_zoom)
+        name = self.known_adcode.name[self.adcode]
+        title = f'Choropleth Mapbox of "{name} ({level})"'
         logger.debug(f'Using zoom of: "{zoom}"')
 
+        # Setup data for Choroplethmapbox
         data = go.Choroplethmapbox(
             geojson=self.geojson,
             featureidkey='properties.name',
@@ -152,8 +174,11 @@ class Manager(object):
             marker=dict(opacity=opacity,),
             marker_line_width=0,
         )
+
+        # Add data into fig
         fig = go.Figure(data)
 
+        # Update the layout of the fig
         fig.update_layout(
             mapbox_accesstoken=token,
             mapbox_center=center,
