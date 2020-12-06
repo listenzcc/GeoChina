@@ -7,6 +7,7 @@ import numpy as np
 import os
 import pandas as pd
 import plotly.graph_objects as go
+import random
 import time
 import urllib
 
@@ -55,6 +56,14 @@ def fig_factory(fig):
         )
     )
     return fig
+
+
+def append_random_values(df, columns=['Value1', 'Value2', 'Value3']):
+    def _random():
+        return [random.randint(3, 13) for _ in df.index]
+    for c in columns:
+        df[c] = _random()
+    return df
 
 
 """
@@ -115,10 +124,14 @@ class Manager(object):
         # Parse geojson into geodf
         geodf = parse_geojson(geojson)
         cnt = len(geodf)
+        append_random_values(geodf)
 
         # Add all records into known_adcode
         for name in geodf.index:
             _adcode = str(geodf.adcode[name])
+            if _adcode in self.known_adcode.index:
+                # ! Only append _adcode record ONCE
+                continue
             self.known_adcode = self.known_adcode.append(pd.Series(dict(
                 level=geodf.level[name],
                 name=name,
@@ -142,7 +155,24 @@ class Manager(object):
         adcode = self.known_adcode.parent[self.adcode]
         self.fetch(adcode)
 
-    def draw_mapbox(self, opacity=0.5):
+    def draw_barchart(self, columns=['Value1', 'Value2', 'Value3']):
+        # Draw columns of the geodf in bar chart
+        x = self.geodf.index
+        data = []
+        for c in columns:
+            y = self.geodf[c]
+            data.append(go.Bar(
+                x=x,
+                y=y,
+                name=c))
+
+        layout = go.Layout(
+            title='Bar chart'
+        )
+        fig = go.Figure(data=data, layout=layout)
+        return fig
+
+    def draw_mapbox(self, opacity=0.5, x_zoom=1):
         # Draw map of latest fetch
         # Setup parameters
         colorscale = 'Viridis'
@@ -160,6 +190,7 @@ class Manager(object):
         style = 'light'
         level = self.known_adcode.level[self.adcode]
         zoom = zoom_table.get(level, default_zoom)
+        zoom = zoom * x_zoom
         name = self.known_adcode.name[self.adcode]
         title = f'Choropleth Mapbox of "{name} ({level})"'
         logger.debug(f'Using zoom of: "{zoom}"')
