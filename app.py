@@ -142,7 +142,7 @@ def update1(adcode, n_clicks, opacity_value, x_zoom_value):
 
     # Update graph1 and selector1 if selector1 changes
     # Selection of new adcode,
-    # !adcode is None refers NO valid selection
+    # ! adcode is None refers NO valid selection
     if prop_id.startswith('selector1.'):
         if adcode is not None:
             manager.fetch(adcode)
@@ -153,7 +153,8 @@ def update1(adcode, n_clicks, opacity_value, x_zoom_value):
     # Change opacity of the fig
     if any([prop_id.startswith('slider1.'),
             prop_id.startswith('slider2.')]):
-        manager.draw_mapbox(**kwargs)
+        manager.draw_mapbox(only_update_layout=True,
+                            **kwargs)
         output['graph1'] = manager.fig
 
     # Default returns of the callback

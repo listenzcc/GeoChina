@@ -172,7 +172,7 @@ class Manager(object):
         fig = go.Figure(data=data, layout=layout)
         return fig
 
-    def draw_mapbox(self, opacity=0.5, x_zoom=1):
+    def draw_mapbox(self, opacity=0.5, x_zoom=1, only_update_layout=False):
         # Draw map of latest fetch
         # Setup parameters
         colorscale = 'Viridis'
@@ -195,19 +195,24 @@ class Manager(object):
         title = f'Choropleth Mapbox of "{name} ({level})"'
         logger.debug(f'Using zoom of: "{zoom}"')
 
-        # Setup data for Choroplethmapbox
-        data = go.Choroplethmapbox(
-            geojson=self.geojson,
-            featureidkey='properties.name',
-            locations=self.geodf.index,
-            z=self.geodf.childrenNum,
-            colorscale=colorscale,
-            marker=dict(opacity=opacity,),
-            marker_line_width=0,
-        )
+        if all([only_update_layout,
+                hasattr(self, 'fig')]):
+            fig = self.fig
+            fig['data'][0]['marker']['opacity'] = opacity
+        else:
+            # Setup data for Choroplethmapbox
+            data = go.Choroplethmapbox(
+                geojson=self.geojson,
+                featureidkey='properties.name',
+                locations=self.geodf.index,
+                z=self.geodf.childrenNum,
+                colorscale=colorscale,
+                marker=dict(opacity=opacity,),
+                marker_line_width=0,
+            )
 
-        # Add data into fig
-        fig = go.Figure(data)
+            # Add data into fig
+            fig = go.Figure(data)
 
         # Update the layout of the fig
         fig.update_layout(
@@ -216,6 +221,7 @@ class Manager(object):
             mapbox_style=style,
             mapbox_zoom=zoom,
             title=title,
+            uirevision='constant',
             # showlegend=True,
         )
 
