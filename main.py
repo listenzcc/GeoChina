@@ -30,7 +30,7 @@ def main():
 
         # Draw map
         if inp == 'd':
-            fig = manager.draw_latest()
+            fig = manager.draw_mapbox()
             fig.show()
             continue
 
