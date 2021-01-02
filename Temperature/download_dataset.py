@@ -100,7 +100,7 @@ def fetch_data(ID, year, refetch_empty=False):
 
 
 # %%
-for year in [2015, 2016, 2017]:
+for year in [2012, 2013, 2014]:
     for ID in tqdm(stations['ID']):
         fetch_data(ID, year)
 
