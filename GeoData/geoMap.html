@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style type="text/css">
+        svg#geo-map-china {
+            width: 8in;
+            background-color: cadetblue;
+        }
+        
+        div {
+            margin: 1in;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="Title">
+        <h1>Geo Map</h1>
+    </div>
+    <div>
+        <svg xmlns="http://www.w3.org/2000/" id="geo-map-china"></svg>
+    </div>
+    <script>
+        console.log("D3 version is", d3.version);
+        let lonRange = [73.66, 135.05]; // In width
+        let latRange = [3.86, 53.55]; // In height
+        let ratio =
+            (latRange[1] - latRange[0]) / (lonRange[1] - lonRange[0]);
+
+        let svg = d3.select("#geo-map-china");
+        svg.attr("height", 8 * ratio + "in");
+
+        let svgDom = document.getElementById("geo-map-china");
+        let clientHeight = svgDom.clientHeight;
+        let clientWidth = svgDom.clientWidth;
+
+        let scaleX = d3.scaleLinear(lonRange, [0, clientWidth]);
+        let scaleY = d3.scaleLinear(latRange, [clientHeight, 0]);
+
+        function project(d) {
+            console.log(d["properties"]["name"]);
+            console.log(d["geometry"]["type"]);
+
+            if (d["geometry"]["type"] === "MultiPolygon") {
+                for (
+                    let i = 0; i < d["geometry"]["coordinates"].length; i++
+                ) {
+                    for (
+                        let j = 0; j < d["geometry"]["coordinates"][i].length; j++
+                    ) {
+                        for (
+                            let k = 0; k < d["geometry"]["coordinates"][i][j].length; k++
+                        ) {
+                            let x = +d["geometry"]["coordinates"][i][j][
+                                k
+                            ][0];
+                            let y = +d["geometry"]["coordinates"][i][j][
+                                k
+                            ][1];
+                            // console.log(x, y);
+                            d["geometry"]["coordinates"][i][j][
+                                k
+                            ][0] = scaleX(x);
+                            d["geometry"]["coordinates"][i][j][
+                                k
+                            ][1] = scaleY(y);
+                        }
+                    }
+                }
+            }
+
+            if (d["geometry"]["type"] === "Polygon") {
+                for (
+                    let i = 0; i < d["geometry"]["coordinates"].length; i++
+                ) {
+                    for (
+                        let k = 0; k < d["geometry"]["coordinates"][i].length; k++
+                    ) {
+                        let x = +d["geometry"]["coordinates"][i][k][0];
+                        let y = +d["geometry"]["coordinates"][i][k][1];
+                        // console.log(x, y);
+                        d["geometry"]["coordinates"][i][k][0] = scaleX(x);
+                        d["geometry"]["coordinates"][i][k][1] = scaleY(y);
+                    }
+                }
+            }
+            return d;
+        }
+
+        d3.json("a.json").then(function(rawData) {
+            console.log(rawData);
+
+            svg.selectAll("path")
+                .data(rawData["features"])
+                .enter()
+                .append("path")
+                .attr("d", function(d) {
+                    console.log(d);
+                    return d3.geoPath()(project(d));
+                })
+                .attr("stroke", "gray");
+        });
+
+        // d3.csv("a.csv", function(rawData) {
+        //     console.log(rawData);
+        //     console.log(rawData["geometry"]);
+        //     svg.append("path")
+        //         .datum({
+        //             type: "FeatureCollection",
+        //             features: [rawData],
+        //             // features: features,
+        //         })
+        //         .attr("d", d3.geoPath());
+        // });
+    </script>
+</body>
+
+</html>
