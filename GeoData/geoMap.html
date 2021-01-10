@@ -1,121 +1,198 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
+  <head>
     <meta charset="utf-8" />
     <script src="https://d3js.org/d3.v6.min.js"></script>
     <style type="text/css">
-        svg#geo-map-china {
-            width: 8in;
-            background-color: cadetblue;
-        }
-        
-        div {
-            margin: 1in;
-        }
+      svg#geo-map-china {
+        width: 8in;
+        background-color: gray;
+      }
+
+      div {
+        margin: 0.2in;
+        border-color: red;
+        border-style: solid;
+        border-width: 1px;
+      }
+
+      div.controller {
+        display: flex;
+        align-items: center;
+      }
+
+      svg {
+        margin: 0.1in;
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <div id="Title">
-        <h1>Geo Map</h1>
+      <h1>Geo Map</h1>
     </div>
+
     <div>
-        <svg xmlns="http://www.w3.org/2000/" id="geo-map-china"></svg>
+      <svg xmlns="http://www.w3.org/2000/" id="geo-map-china"></svg>
     </div>
+
+    <div class="controller">
+      <h2>Scale Range</h2>
+      <input
+        id="scale-province"
+        type="range"
+        value="100"
+        min="50"
+        max="100"
+        onchange="scale_onchange()"
+      />
+      <p id="scale-province-p">100</p>
+    </div>
+
+    <div class="controller">
+      <h2>Saturation Range</h2>
+      <input
+        id="scale-saturation"
+        type="range"
+        value="100"
+        min="1"
+        max="100"
+        onchange="scale_onchange()"
+      />
+      <p id="scale-saturation-p">100</p>
+    </div>
+
+    <div class="controller">
+      <h2>Luminosity Range</h2>
+      <input
+        id="scale-luminosity"
+        type="range"
+        value="50"
+        min="1"
+        max="100"
+        onchange="scale_onchange()"
+      />
+      <p id="scale-luminosity-p">100</p>
+    </div>
+
     <script>
-        console.log("D3 version is", d3.version);
-        let lonRange = [73.66, 135.05]; // In width
-        let latRange = [3.86, 53.55]; // In height
-        let ratio =
-            (latRange[1] - latRange[0]) / (lonRange[1] - lonRange[0]);
+      function scale_onchange() {
+        draw_map();
+        let scales = ["scale-province", "scale-saturation", "scale-luminosity"];
+        for (let i = 0; i < scales.length; i++) {
+          let from = scales[i];
+          let to = scales[i] + "-p";
+          document.getElementById(to).innerHTML = document.getElementById(
+            from
+          ).value;
+        }
+      }
+    </script>
 
-        let svg = d3.select("#geo-map-china");
-        svg.attr("height", 8 * ratio + "in");
+    <script>
+      console.log("D3 version is", d3.version);
+      let lonRange = [73.66, 135.05]; // In width
+      let latRange = [3.86, 53.55]; // In height
+      let ratio = (latRange[1] - latRange[0]) / (lonRange[1] - lonRange[0]);
 
-        let svgDom = document.getElementById("geo-map-china");
-        let clientHeight = svgDom.clientHeight;
-        let clientWidth = svgDom.clientWidth;
+      let svg = d3.select("#geo-map-china");
+      svg.attr("height", 8 * ratio + "in");
 
-        let scaleX = d3.scaleLinear(lonRange, [0, clientWidth]);
-        let scaleY = d3.scaleLinear(latRange, [clientHeight, 0]);
+      let svgDom = document.getElementById("geo-map-china");
+      let clientHeight = svgDom.clientHeight;
+      let clientWidth = svgDom.clientWidth;
 
-        function project(d) {
-            console.log(d["properties"]["name"]);
-            console.log(d["geometry"]["type"]);
+      let scaleX = d3.scaleLinear(lonRange, [0, clientWidth]);
+      let scaleY = d3.scaleLinear(latRange, [clientHeight, 0]);
 
-            if (d["geometry"]["type"] === "MultiPolygon") {
-                for (
-                    let i = 0; i < d["geometry"]["coordinates"].length; i++
-                ) {
-                    for (
-                        let j = 0; j < d["geometry"]["coordinates"][i].length; j++
-                    ) {
-                        for (
-                            let k = 0; k < d["geometry"]["coordinates"][i][j].length; k++
-                        ) {
-                            let x = +d["geometry"]["coordinates"][i][j][
-                                k
-                            ][0];
-                            let y = +d["geometry"]["coordinates"][i][j][
-                                k
-                            ][1];
-                            // console.log(x, y);
-                            d["geometry"]["coordinates"][i][j][
-                                k
-                            ][0] = scaleX(x);
-                            d["geometry"]["coordinates"][i][j][
-                                k
-                            ][1] = scaleY(y);
-                        }
-                    }
-                }
-            }
+      function project(d) {
+        let scale =
+          parseInt(document.getElementById("scale-province").value) / 100;
+        // console.log(scale);
+        // console.log(d);
+        // console.log(d["properties"]["name"]);
 
-            if (d["geometry"]["type"] === "Polygon") {
-                for (
-                    let i = 0; i < d["geometry"]["coordinates"].length; i++
-                ) {
-                    for (
-                        let k = 0; k < d["geometry"]["coordinates"][i].length; k++
-                    ) {
-                        let x = +d["geometry"]["coordinates"][i][k][0];
-                        let y = +d["geometry"]["coordinates"][i][k][1];
-                        // console.log(x, y);
-                        d["geometry"]["coordinates"][i][k][0] = scaleX(x);
-                        d["geometry"]["coordinates"][i][k][1] = scaleY(y);
-                    }
-                }
-            }
-            return d;
+        let centroid = d["properties"]["centroid"];
+        let c = undefined;
+        if (centroid !== undefined) {
+          c = [scaleX(centroid[0]), scaleY(centroid[1])];
         }
 
-        d3.json("a.json").then(function(rawData) {
-            console.log(rawData);
+        let coordinates = d["geometry"]["coordinates"];
 
-            svg.selectAll("path")
-                .data(rawData["features"])
-                .enter()
-                .append("path")
-                .attr("d", function(d) {
-                    console.log(d);
-                    return d3.geoPath()(project(d));
-                })
-                .attr("stroke", "gray");
+        if (d["geometry"]["type"] === "MultiPolygon") {
+          for (let i = 0; i < coordinates.length; i++) {
+            for (let j = 0; j < coordinates[i].length; j++) {
+              for (let k = 0; k < coordinates[i][j].length; k++) {
+                let x = +coordinates[i][j][k][0];
+                let y = +coordinates[i][j][k][1];
+                if (c === undefined) {
+                  c = [scaleX(x), scaleY(y)];
+                }
+                coordinates[i][j][k][0] = (scaleX(x) - c[0]) * scale + c[0];
+                coordinates[i][j][k][1] = (scaleY(y) - c[1]) * scale + c[1];
+              }
+            }
+          }
+        }
+
+        if (d["geometry"]["type"] === "Polygon") {
+          for (let i = 0; i < coordinates.length; i++) {
+            for (let k = 0; k < coordinates[i].length; k++) {
+              let x = +coordinates[i][k][0];
+              let y = +coordinates[i][k][1];
+              if (c === undefined) {
+                c = [scaleX(x), scaleY(y)];
+              }
+              coordinates[i][k][0] = (scaleX(x) - c[0]) * scale + c[0];
+              coordinates[i][k][1] = (scaleY(y) - c[1]) * scale + c[1];
+            }
+          }
+        }
+
+        return d;
+      }
+
+      function draw_map() {
+        console.log("Drawing map");
+        svg.selectAll("#provinces").remove();
+        d3.json("a.json").then(function (rawData) {
+          console.log(rawData);
+
+          let features = rawData["features"];
+
+          let colors = [];
+          let saturation =
+            parseInt(document.getElementById("scale-saturation").value) / 100;
+          let luminosity =
+            parseInt(document.getElementById("scale-luminosity").value) / 100;
+          for (let i = 0; i < features.length; i++) {
+            colors.push(
+              d3
+                .hsl((i / features.length) * 360, saturation, luminosity)
+                .toString()
+            );
+          }
+
+          svg
+            .append("g")
+            .attr("id", "provinces")
+            .selectAll("path")
+            .data(features)
+            .enter()
+            .append("path")
+            .attr("d", function (d) {
+              return d3.geoPath()(project(d));
+            })
+            .attr("stroke", "black")
+            .attr("fill", function (d, i) {
+              return colors[i];
+            });
         });
+      }
 
-        // d3.csv("a.csv", function(rawData) {
-        //     console.log(rawData);
-        //     console.log(rawData["geometry"]);
-        //     svg.append("path")
-        //         .datum({
-        //             type: "FeatureCollection",
-        //             features: [rawData],
-        //             // features: features,
-        //         })
-        //         .attr("d", d3.geoPath());
-        // });
+      //   draw_map();
+      scale_onchange();
     </script>
-</body>
-
+  </body>
 </html>
