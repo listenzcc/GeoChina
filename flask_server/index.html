@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+</head>
+
+<body>
+    <h1>Welcome to Flask HomePage</h1>
+    <script>
+        console.log(d3.version)
+        d3.json('http://127.0.0.1:5000/main.json').then(function(rawData) {
+            console.log(rawData)
+        })
+    </script>
+</body>
+
+</html>
