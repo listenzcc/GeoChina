@@ -20,7 +20,9 @@ def hello_world():
 
 @app.route('/<name>')
 def index(name):
-    assert(name in os.listdir('.'))
+    if not name in os.listdir('.'):
+        return f'Can not find {name}', 404
+
     resp = open(name, 'rb').read()
     if '.' in name:
         ext = name.split('.')[-1]

@@ -8,11 +8,14 @@
 
 <body>
     <h1>Welcome to Flask HomePage</h1>
+    <div>
+        <iframe src='setting.ini'></iframe>
+    </div>
     <script>
-        console.log(d3.version)
-        d3.json('http://127.0.0.1:5000/main.json').then(function(rawData) {
-            console.log(rawData)
-        })
+        console.log(d3.version);
+        // d3.json('./main.json').then(function(rawData) {
+        //     console.log(rawData)
+        // })
     </script>
 </body>
 
