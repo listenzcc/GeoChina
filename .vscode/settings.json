@@ -2,8 +2,10 @@
     "cSpell.words": [
         "Choroplethmapbox",
         "Viridis",
+        "acroutes",
         "choropleth",
         "featureidkey",
-        "geodf"
+        "geodf",
+        "pypinyin"
     ]
 }
