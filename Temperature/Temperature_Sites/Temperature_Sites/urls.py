@@ -24,6 +24,9 @@ v = Views()
 urlpatterns = [
     path('admin/', admin.site.urls),
     url(r'^$', v.res_empty),
-    url(r'^locations.json$', v.res_locations),
-    url(r'^search-locations/([a-z]{1,10})$', v.res_search_locations)
+    url(r'^index.html$', v.res_index_html),
+    url(r'^locations$', v.res_locations),
+    url(r'^locations.json$', v.res_locations_json),
+    url(r'^search-locations/([a-z]{0,10})$', v.res_search_locations),
+    url(r'^plot$', v.res_plot),
 ]

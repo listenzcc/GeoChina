@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+</head>
+
+<body>
+  <div id="Logo Bar">
+    <h1>Index HTML of Temperature Web Site</h1>
+    <p>Current Date is {{ current_date }}</p>
+  </div>
+
+  <div id="controller">
+    <input id="input-1" type="text" oninput="refresh()" onkeydown="if(event.keyCode==13) {plot()}"></input>
+  </div>
+
+  <div id="display">
+    <iframe id="iframe-1" src="locations"></iframe>
+    <iframe id="iframe-2" src="plot"></iframe>
+  </div>
+
+  <script>
+    function refresh() {
+      let value = document.getElementById('input-1').value
+      value = value.replaceAll(' ', '')
+      console.log(value)
+      document.getElementById('iframe-1').src = "search-locations/" + value
+    }
+    function plot() {
+      refresh()
+      document.getElementById('iframe-2').contentWindow.location.reload()
+    }
+  </script>
+
+  <script>
+    // The js code is only for testing the function of returning a JSON object using django
+    console.log(d3.version);
+    d3.json("locations.json").then(function (rawData) {
+      console.log(rawData);
+    });
+  </script>
+</body>
+
+</html>
